@@ -27,35 +27,33 @@ while ($row = $soortResult->fetch_assoc()) {
 }
 
 
-$sql = "SELECT id, gewicht, kleur, dikte, soort, prijs, voorraad, gelooid
-        FROM product
+$sql = "SELECT p.id,p.naam, p.gewicht, p.kleur, p.dikte, p.soort, p.prijs, p.voorraad, p.gelooid,
+               b.bestelnr, b.status AS bestelling_status
+        FROM product p
+        LEFT JOIN bestelling b ON b.product_id = p.id
         WHERE 1=1";
 $types = "";
 $params = [];
 
 if ($zoek !== '') {
-  $sql .= " AND (kleur LIKE ? OR soort LIKE ? OR gewicht LIKE ? OR prijs LIKE ?)";
-  $like = "%" . $zoek . "%";
-  $types .= "ssss";
-  $params[] = $like;
-  $params[] = $like;
-  $params[] = $like;
-  $params[] = $like;
+  $sql .= " AND p.naam LIKE ?";
+  $params[] = "%$zoek%";
+  $types .= "s"; 
 }
 
 if ($kleurFilter !== '') {
-  $sql .= " AND kleur = ?";
+  $sql .= " AND p.kleur = ?";
   $types .= "s";
   $params[] = $kleurFilter;
 }
 
 if ($soortFilter !== '') {
-  $sql .= " AND soort = ?";
+  $sql .= " AND p.soort = ?";
   $types .= "s";
   $params[] = $soortFilter;
 }
 
-$sql .= " ORDER BY id";
+$sql .= " ORDER BY p.id";
 
 $stmt = $conn->prepare($sql);
 if ($types !== '') {
@@ -78,11 +76,15 @@ $result = $stmt->get_result();
 
   <h1>Voorraad overzicht</h1>
 
+  <?php if (isset($_GET['toegevoegd'])) { ?>
+    <p style="color: green;">Product en bestelling zijn toegevoegd.</p>
+  <?php } ?>
+
   <form method="GET" action="voorraad.php" id="filterForm">
     <input
       type="text"
       name="zoek"
-      placeholder="Zoeken op kleur, soort, gewicht of prijs..."
+      placeholder="Zoeken naam."
       value="<?php echo htmlspecialchars($zoek); ?>"
     >
 
@@ -106,19 +108,21 @@ $result = $stmt->get_result();
 
     <input type="submit" value="Filteren">
     <a href="voorraad.php">Reset filters</a>
+    <a href="product.php">+ Nieuw product toevoegen</a>
   </form>
 
   <table border="1" cellpadding="6" cellspacing="0">
     <tr>
       <th>ID</th>
+      <th>Naam</th>
       <th>Gewicht</th>
       <th>Kleur</th>
       <th>Dikte</th>
       <th>Soort leer</th>
       <th>Prijs</th>
+      <th>Voorraad</th>
       <th>Bestelling</th>
       <th>Status bestelling</th>
-      <th>Klant</th>
     </tr>
     <?php
     if ($result->num_rows === 0) {
@@ -127,13 +131,15 @@ $result = $stmt->get_result();
       while ($row = $result->fetch_assoc()) {
         echo "<tr>";
         echo "<td>" . htmlspecialchars($row['id']) . "</td>";
+        echo "<td>" . htmlspecialchars($row['naam']) . "</td>";
         echo "<td>" . htmlspecialchars($row['gewicht']) . "</td>";
         echo "<td>" . htmlspecialchars($row['kleur']) . "</td>";
         echo "<td>" . htmlspecialchars($row['dikte']) . "</td>";
         echo "<td>" . htmlspecialchars($row['soort']) . "</td>";
         echo "<td>" . htmlspecialchars($row['prijs']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['gelooid'] ?? '-') . "</td>";
-        echo "<td>" . htmlspecialchars($row['voorraad'] ?? '-') . "</td>";
+        echo "<td>" . htmlspecialchars($row['voorraad']) . "</td>";
+        echo "<td>" . htmlspecialchars($row['bestelnr'] ?? '-') . "</td>";
+        echo "<td>" . htmlspecialchars($row['bestelling_status'] ?? '-') . "</td>";
         echo "</tr>";
       }
     }
