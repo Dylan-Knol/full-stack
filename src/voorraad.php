@@ -7,6 +7,14 @@ if (!isset($_SESSION['ingelogd'])) {
 
 $conn = require_once "partials/dbconnection.php";
 
+// Na het toevoegen/verwijderen terug naar dezelfde pagina, inclusief de gekozen filters
+$terugUrl = 'voorraad.php' . (($_SERVER['QUERY_STRING'] ?? '') !== '' ? '?' . $_SERVER['QUERY_STRING'] : '');
+
+// Melding uit winkelwagen.php of verwijderen.php
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
+
+$aantalInWagen = array_sum($_SESSION['winkelwagen'] ?? []);
 
 $zoek = trim($_GET['zoek'] ?? '');
 $kleurFilter = $_GET['kleur'] ?? '';
@@ -27,7 +35,7 @@ while ($row = $soortResult->fetch_assoc()) {
 }
 
 
-$sql = "SELECT p.id,p.naam, p.gewicht, p.kleur, p.dikte, p.soort, p.prijs, p.voorraad, p.gelooid,
+$sql = "SELECT p.id, p.naam, p.gewicht, p.kleur, p.dikte, p.soort, p.prijs, p.voorraad, p.gelooid,
                b.bestelnr, b.status AS bestelling_status
         FROM product p
         LEFT JOIN bestelling b ON b.product_id = p.id
@@ -38,7 +46,7 @@ $params = [];
 if ($zoek !== '') {
   $sql .= " AND p.naam LIKE ?";
   $params[] = "%$zoek%";
-  $types .= "s"; 
+  $types .= "s";
 }
 
 if ($kleurFilter !== '') {
@@ -73,11 +81,18 @@ $result = $stmt->get_result();
 <body>
 
   <a href="logout.php">Uitloggen</a>
+  <a href="winkelwagen.php">Winkelwagen (<?php echo (int) $aantalInWagen; ?>)</a>
 
   <h1>Voorraad overzicht</h1>
 
   <?php if (isset($_GET['toegevoegd'])) { ?>
     <p style="color: green;">Product en bestelling zijn toegevoegd.</p>
+  <?php } ?>
+
+  <?php if ($flash) { ?>
+    <p style="color: <?php echo $flash['type'] === 'ok' ? 'green' : 'red'; ?>;">
+      <?php echo htmlspecialchars($flash['tekst']); ?>
+    </p>
   <?php } ?>
 
   <form method="GET" action="voorraad.php" id="filterForm">
@@ -123,10 +138,11 @@ $result = $stmt->get_result();
       <th>Voorraad</th>
       <th>Bestelling</th>
       <th>Status bestelling</th>
+      <th>Acties</th>
     </tr>
     <?php
     if ($result->num_rows === 0) {
-      echo "<tr><td colspan='9'>Geen voorraad gevonden</td></tr>";
+      echo "<tr><td colspan='11'>Geen voorraad gevonden</td></tr>";
     } else {
       while ($row = $result->fetch_assoc()) {
         echo "<tr>";
@@ -140,6 +156,27 @@ $result = $stmt->get_result();
         echo "<td>" . htmlspecialchars($row['voorraad']) . "</td>";
         echo "<td>" . htmlspecialchars($row['bestelnr'] ?? '-') . "</td>";
         echo "<td>" . htmlspecialchars($row['bestelling_status'] ?? '-') . "</td>";
+
+        echo "<td style='white-space: nowrap;'>";
+        if ((int) $row['voorraad'] > 0) {
+          echo "<form method='POST' action='winkelwagen.php' style='display: inline;'>";
+          echo "<input type='hidden' name='actie' value='toevoegen'>";
+          echo "<input type='hidden' name='product_id' value='" . (int) $row['id'] . "'>";
+          echo "<input type='hidden' name='terug' value='" . htmlspecialchars($terugUrl, ENT_QUOTES) . "'>";
+          echo "<input type='number' name='aantal' value='1' min='1' max='" . (int) $row['voorraad'] . "' style='width: 60px;'> ";
+          echo "<input type='submit' value='In winkelwagen'>";
+          echo "</form> ";
+        } else {
+          echo "Uitverkocht ";
+        }
+
+        echo "<form method='POST' action='verwijderen.php' style='display: inline;' onsubmit=\"return confirm('Dit product en de bijbehorende bestelling(en) verwijderen?');\">";
+        echo "<input type='hidden' name='product_id' value='" . (int) $row['id'] . "'>";
+        echo "<input type='hidden' name='terug' value='" . htmlspecialchars($terugUrl, ENT_QUOTES) . "'>";
+        echo "<input type='submit' value='Verwijderen'>";
+        echo "</form>";
+        echo "</td>";
+
         echo "</tr>";
       }
     }
