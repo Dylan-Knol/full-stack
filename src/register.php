@@ -1,17 +1,20 @@
 <?php
-$error = "";
+$error = ""; // Foutmelding voor in de pagina
 
+// Alleen uitvoeren als het registratieformulier is verstuurd
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $conn = require_once "partials/dbconnection.php";
 
   $username = $_POST['username'];
   $password = $_POST['wachtwoord'];
 
+  // Validatie: minimale lengte van gebruikersnaam en wachtwoord
   if (strlen($username) < 5) {
     $error = "Gebruikersnaam moet minimaal 5 tekens zijn.";
   } elseif (strlen($password) < 8) {
     $error = "Wachtwoord moet minimaal 8 tekens zijn.";
   } else {
+    // Controleer of de gebruikersnaam al bestaat
     $checkStmt = $conn->prepare("SELECT id FROM user WHERE username = ?");
     $checkStmt->bind_param("s", $username);
     $checkStmt->execute();
@@ -23,12 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       $checkStmt->close();
 
+      // Wachtwoord nooit als tekst opslaan, alleen als hash
       $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
       $stmt = $conn->prepare("INSERT INTO user (username, wachtwoord) VALUES (?, ?)");
       $stmt->bind_param("ss", $username, $hashedPassword);
       $stmt->execute();
       $stmt->close();
 
+      // Klaar: naar de inlogpagina
       header("Location: login.php?registered=1");
       exit();
     }
@@ -49,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div id="loginContainer">
     <h2 id="loginTitle">Register</h2>
 
+    <!-- Foutmelding tonen (met htmlspecialchars tegen XSS) -->
     <?php if ($error) echo "<p>" . htmlspecialchars($error) . "</p>"; ?>
 
     <form method="POST" action="register.php">
