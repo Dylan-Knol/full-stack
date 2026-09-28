@@ -21,3 +21,6 @@ Winkelwagen en bestellen
 Bij elk product kies je een aantal en voeg je het toe aan de winkelwagen. 
 Daar kun je aantallen aanpassen of producten verwijderen, 
 en zie je de totaalprijs. Bij  Bestellen wordt de voorraad automatisch bijgewerkt en verschijnt een pop-up ter bevestiging.
+
+
+Als ik meer tijd had, had ik het iets mooier gemaakt en kleine verbeteringen maken
