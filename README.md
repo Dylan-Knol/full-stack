@@ -24,3 +24,13 @@ en zie je de totaalprijs. Bij  Bestellen wordt de voorraad automatisch bijgewerk
 
 
 Als ik meer tijd had, had ik het iets mooier gemaakt en kleine verbeteringen maken
+
+
+instructie hoe je de code kan zien
+
+1 download eerst docker
+2 clone de code
+3 docker compose up
+4 open de bestanden die je hebt gecloned
+5 kopieer deze link: http://localhost:8080/voorraad.php
+6
